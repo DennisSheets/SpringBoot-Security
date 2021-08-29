@@ -35,15 +35,16 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .and()
+                .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/","/css/*","/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name()) // role base authentication
                 .anyRequest()
                 .authenticated()
                 .and()
-                .httpBasic(); // Basic Auth
+                .formLogin()
+                .loginPage("/login").permitAll();
+
 
     }
 

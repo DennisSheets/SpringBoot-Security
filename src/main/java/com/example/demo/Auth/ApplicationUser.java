@@ -2,61 +2,70 @@ package com.example.demo.Auth;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
-public class ApplicationUser extends JdbcDaoImpl {
 
-    private final String password;
+//public class ApplicationUser extends JdbcDaoImpl {
+public class ApplicationUser implements UserDetails {
+
     private final String username;
-    private final List<? extends GrantedAuthority> grantedAuthorities;
-    private final Boolean isAccountNonExpired;
-    private final Boolean isAccountNonLocked;
-    private final Boolean isCredentialNonExpired;
-    private final Boolean isEnabled;
+    private final String password;
+    private final Set<? extends GrantedAuthority> grantedAuthorities;
+    private final boolean isAccountNonExpired;
+    private final boolean isAccountNonLocked;
+    private final boolean isCredentialsNonExpired;
+    private final boolean isEnabled;
 
-    public ApplicationUser(String password,
-                           String username,
-                           List<? extends GrantedAuthority> grantedAuthorities,
-                           Boolean isAccountNonExpired,
-                           Boolean isAccountNonLocked,
-                           Boolean isCredentialNonExpired,
-                           Boolean isEnabled) {
-        this.grantedAuthorities = grantedAuthorities;
-        this.password = password;
+    public ApplicationUser(String username,
+                           String password,
+                           Set<? extends GrantedAuthority> grantedAuthorities,
+                           boolean isAccountNonExpired,
+                           boolean isAccountNonLocked,
+                           boolean isCredentialsNonExpired,
+                           boolean isEnabled) {
         this.username = username;
+        this.password = password;
+        this.grantedAuthorities = grantedAuthorities;
         this.isAccountNonExpired = isAccountNonExpired;
         this.isAccountNonLocked = isAccountNonLocked;
-        this.isCredentialNonExpired = isCredentialNonExpired;
+        this.isCredentialsNonExpired = isCredentialsNonExpired;
         this.isEnabled = isEnabled;
     }
 
-    public List<? extends GrantedAuthority> getGrantedAuthorities() {
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
         return grantedAuthorities;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
 
-    public Boolean getAccountNonExpired() {
+    @Override
+    public boolean isAccountNonExpired() {
         return isAccountNonExpired;
     }
 
-    public Boolean getAccountNonLocked() {
+    @Override
+    public boolean isAccountNonLocked() {
         return isAccountNonLocked;
     }
 
-    public Boolean getCredentialNonExpired() {
-        return isCredentialNonExpired;
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return isCredentialsNonExpired;
     }
 
-    public Boolean getEnabled() {
+    @Override
+    public boolean isEnabled() {
         return isEnabled;
     }
 }

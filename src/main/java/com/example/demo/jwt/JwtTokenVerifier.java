@@ -5,13 +5,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import javax.crypto.SecretKey;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -22,51 +21,61 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class JwtTokeVerifier extends OncePerRequestFilter {
+public class JwtTokenVerifier extends OncePerRequestFilter {
+
+    private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
+
+    public JwtTokenVerifier(SecretKey secretKey,
+                           JwtConfig jwtConfig) {
+        this.secretKey = secretKey;
+        this.jwtConfig = jwtConfig;
+    }
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String authorizationHeader = request.getHeader("Authorization");
+        String authorizationHeader = request.getHeader(jwtConfig.getAuthorizationHeaders());
 
-        if(Strings.isNullOrEmpty(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+        if(Strings.isNullOrEmpty(authorizationHeader) || !authorizationHeader.startsWith(jwtConfig.getTokenPrefix())) {
             filterChain.doFilter(request,response);
             return;
-        }
+        } else {
 
-        String token = authorizationHeader.replace("Bearer ", "");
+            String token = authorizationHeader.replace(jwtConfig.getTokenPrefix(), "");
 
-        try {
+            try {
 
-            String secretKey = "securesecuresecuresecuresecuresecuresecuresecure";
+                Jws<Claims> claimsJws = Jwts.parser()
+                        .setSigningKey(secretKey)
+                        .parseClaimsJws(token);
 
-            Jws<Claims> claimsJws = Jwts.parser()
-                    .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
-                    .parseClaimsJws(token);
+                Claims body = claimsJws.getBody();
 
-            Claims body = claimsJws.getBody();
+                String username = body.getSubject();
 
-            String username = body.getSubject();
+                var authorities = (List<Map<String, String>>) body.get("authorities");
 
-            var authorities = (List<Map<String, String>>) body.get("authorities");
+                Set<SimpleGrantedAuthority> simpleGrantedAuthorities = authorities.stream()
+                        .map(m -> new SimpleGrantedAuthority(m.get("authority")))
+                        .collect(Collectors.toSet());
 
-            Set<SimpleGrantedAuthority> simpleGrantedAuthorities = authorities.stream()
-                    .map(m -> new SimpleGrantedAuthority(m.get("authority")))
-                    .collect(Collectors.toSet());
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        simpleGrantedAuthorities
+                );
 
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    username,
-                    null,
-                    simpleGrantedAuthorities
-            );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authentication);
-        } catch (JwtException e){
-            throw new IllegalStateException(String.format("Token %s cannot be trusted", token));
+            } catch (JwtException e) {
+                throw new IllegalStateException(String.format("Token %s cannot be trusted", token));
+            }
+
+            filterChain.doFilter(request, response);
         }
 
     }

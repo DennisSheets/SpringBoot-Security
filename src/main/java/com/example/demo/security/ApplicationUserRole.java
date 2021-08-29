@@ -8,7 +8,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public enum ApplicationUserRole {
-    STUDENT(Sets.newHashSet()),
+    STUDENT(Sets.newHashSet(
+            ApplicationUserPermission.STUDENT_READ)),
     ADMIN(Sets.newHashSet(
             ApplicationUserPermission.COURSE_READ,
             ApplicationUserPermission.COURSE_WRITE,
